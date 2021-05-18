@@ -44,7 +44,7 @@ def transform_field_to_int(db, field):
     db[field] = db[field].apply(lambda x: x if x.isdigit() else 0) # enleve les '.'
     db[field] = db[field].apply(lambda x: int(x)) # met tout en int
     db[field] = db[field].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
-    db = db[db[field] != 0] 
+    db = db[db[field] != 0]
     return db
 
 def transform_dates_to_int(db):
@@ -52,7 +52,14 @@ def transform_dates_to_int(db):
     db = transform_field_to_int(db, 'epouse_annee_naissance')
     print(db)
 
-
+def create_child_list(filtered_db):
+    chef = db[["chef_prenom","chef_nom", "epouse_nom"]]
+    enfant = db["enfants_dans_la_commune_prenom"].str.split("|")
+    chef_enfant = chef.join(enfant).explode("enfants_dans_la_commune_prenom").reset_index()[["chef_prenom","chef_nom", "epouse_nom", "enfants_dans_la_commune_prenom"]]
+    annee = db["enfants_annee_naissance"].str.split("|")
+    annee = annee.explode("enfants_annee_naissance")
+    chef_enfant["annee_enfant"]=annee
+    return chef_enfant
 
 #get_relevant_columns() #doing this once is enough
 db = pd.read_csv(os.path.dirname(__file__) + "/../data/1832_pc_relevant_columns.csv")
