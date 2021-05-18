@@ -1,0 +1,64 @@
+import pandas as pd
+import os
+from difflib import get_close_matches
+
+def get_relevant_columns():
+    df = pd.read_excel(os.path.dirname(__file__) + "/../data/1832_pc.xlsx")
+    sorter_df = df[["chef_prenom", "chef_nom", "chef_annee_naissance", "epouse_nom", "epouse_annee_naissance", "enfants_dans_la_commune_prenom", "enfants_annee_naissance"]]
+    sorter_df.to_csv(os.path.dirname(__file__) + r'/../data/1832_pc_relevant_columns.csv')
+
+    names = pd.read_excel(os.path.dirname(__file__) + "/../data/family_names.xlsx")
+    names['Nom'] = names['Nom'].str.lower()
+    filtered_names = names[["Nom"]].drop_duplicates().reset_index(drop=True)
+    print(filtered_names)
+    filtered_names.to_csv(os.path.dirname(__file__) + r'/../data/all_names_only.csv')
+
+    prenoms = pd.read_csv(os.path.dirname(__file__) + "/../data/all_prenoms.csv")
+    prenoms['prenom'] = prenoms['prenom'].str.lower()
+    filtered_prenoms = prenoms[["prenom"]].drop_duplicates().reset_index(drop=True)
+    print(filtered_prenoms)
+    filtered_prenoms.to_csv(os.path.dirname(__file__) + r'/../data/all_prenoms_only.csv')
+
+def throw_away_bad_names(db, names, prenoms):
+    filter = db.chef_nom.isin(names.Nom)
+
+
+    db.loc[:,'name_is_correct'] = filter
+    db = db.query('name_is_correct == True')
+    del db['name_is_correct']
+
+    filter = db.chef_prenom.isin(prenoms.prenom)
+    db.loc[:,'name_is_correct'] = filter
+    db = db.query('name_is_correct == True')
+    del db['name_is_correct']
+
+    filter1 = db.epouse_nom.isin(names.Nom)
+    filter2 = db.epouse_nom.isin(prenoms.prenom)
+    db.loc[:,'name_is_correct'] = filter1
+    db.loc[:,'prenom_is_correct'] = filter2
+    db = db.query('name_is_correct == True or prenom_is_correct == True or epouse_nom == "·"')
+
+    del db['name_is_correct']
+    del db['prenom_is_correct']
+    return db
+
+def transform_field_to_int(db, field):
+    db[field] = db[field].apply(lambda x: x if x.isdigit() else 0) # enleve les '.'
+    db[field] = db[field].apply(lambda x: int(x)) # met tout en int
+    db[field] = db[field].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
+    return db
+
+def transform_dates_to_int(db):
+    db = transform_field_to_int(db, 'chef_annee_naissance')
+    db = transform_field_to_int(db, 'epouse_annee_naissance')
+    print(db)
+
+
+
+get_relevant_columns()
+db = pd.read_csv(os.path.dirname(__file__) + "/../data/1832_pc_relevant_columns.csv")
+del db['Unnamed: 0']
+names = pd.read_csv(os.path.dirname(__file__) + "/../data/all_names_only.csv")
+prenoms = pd.read_csv(os.path.dirname(__file__) + "/../data/all_prenoms_only.csv")
+filtered_db = throw_away_bad_names(db, names, prenoms)
+transform_dates_to_int(filtered_db)
