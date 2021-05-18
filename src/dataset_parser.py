@@ -10,13 +10,11 @@ def get_relevant_columns():
     names = pd.read_excel(os.path.dirname(__file__) + "/../data/family_names.xlsx")
     names['Nom'] = names['Nom'].str.lower()
     filtered_names = names[["Nom"]].drop_duplicates().reset_index(drop=True)
-    print(filtered_names)
     filtered_names.to_csv(os.path.dirname(__file__) + r'/../data/all_names_only.csv')
 
     prenoms = pd.read_csv(os.path.dirname(__file__) + "/../data/all_prenoms.csv")
     prenoms['prenom'] = prenoms['prenom'].str.lower()
     filtered_prenoms = prenoms[["prenom"]].drop_duplicates().reset_index(drop=True)
-    print(filtered_prenoms)
     filtered_prenoms.to_csv(os.path.dirname(__file__) + r'/../data/all_prenoms_only.csv')
 
 def throw_away_bad_names(db, names, prenoms):
@@ -46,6 +44,7 @@ def transform_field_to_int(db, field):
     db[field] = db[field].apply(lambda x: x if x.isdigit() else 0) # enleve les '.'
     db[field] = db[field].apply(lambda x: int(x)) # met tout en int
     db[field] = db[field].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
+    db = db[db[field] != 0] 
     return db
 
 def transform_dates_to_int(db):
@@ -55,10 +54,10 @@ def transform_dates_to_int(db):
 
 
 
-get_relevant_columns()
+#get_relevant_columns() #doing this once is enough
 db = pd.read_csv(os.path.dirname(__file__) + "/../data/1832_pc_relevant_columns.csv")
 del db['Unnamed: 0']
 names = pd.read_csv(os.path.dirname(__file__) + "/../data/all_names_only.csv")
 prenoms = pd.read_csv(os.path.dirname(__file__) + "/../data/all_prenoms_only.csv")
 filtered_db = throw_away_bad_names(db, names, prenoms)
-transform_dates_to_int(filtered_db)
+filtered_db = transform_dates_to_int(filtered_db)
