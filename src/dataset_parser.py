@@ -44,21 +44,33 @@ def transform_field_to_int(db, field):
     db[field] = db[field].apply(lambda x: x if x.isdigit() else 0) # enleve les '.'
     db[field] = db[field].apply(lambda x: int(x)) # met tout en int
     db[field] = db[field].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
-    db = db[db[field] != 0]
     return db
+
+
 
 def transform_dates_to_int(db):
     db = transform_field_to_int(db, 'chef_annee_naissance')
     db = transform_field_to_int(db, 'epouse_annee_naissance')
-    print(db)
+    return db
 
-def create_child_list(filtered_db):
+def filter_children(db):
+    filter = db.enfants_dans_la_commune_prenom.isin(prenoms.prenom)
+    db.loc[:,'name_is_correct'] = filter
+    db = db.query('name_is_correct == True')
+    del db['name_is_correct']
+    db["annee_enfant"] = db["annee_enfant"].apply(lambda x: x if str(x).isdigit() else 0) # enleve les '.'
+    db["annee_enfant"] = db["annee_enfant"].apply(lambda x: int(x)) # met tout en int
+    db["annee_enfant"] = db["annee_enfant"].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
+    db = db[db["annee_enfant"] != 0]
+    return db
+
+def create_child_list(db):
     chef = db[["chef_prenom","chef_nom", "epouse_nom"]]
     enfant = db["enfants_dans_la_commune_prenom"].str.split("|")
     chef_enfant = chef.join(enfant).explode("enfants_dans_la_commune_prenom").reset_index()[["chef_prenom","chef_nom", "epouse_nom", "enfants_dans_la_commune_prenom"]]
     annee = db["enfants_annee_naissance"].str.split("|")
-    annee = annee.explode("enfants_annee_naissance")
-    chef_enfant["annee_enfant"]=annee
+    annee2 = annee.explode().reset_index()[["enfants_annee_naissance"]]
+    chef_enfant["annee_enfant"]=annee2
     return chef_enfant
 
 #get_relevant_columns() #doing this once is enough
@@ -68,3 +80,5 @@ names = pd.read_csv(os.path.dirname(__file__) + "/../data/all_names_only.csv")
 prenoms = pd.read_csv(os.path.dirname(__file__) + "/../data/all_prenoms_only.csv")
 filtered_db = throw_away_bad_names(db, names, prenoms)
 filtered_db = transform_dates_to_int(filtered_db)
+child_db = create_child_list(filtered_db)
+filter_children(child_db).to_csv(os.path.dirname(__file__) + r'/../data/chef_enfant.csv')
