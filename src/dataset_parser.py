@@ -61,7 +61,7 @@ def filter_children(db):
     del db['name_is_correct']
     db["annee_enfant"] = db["annee_enfant"].apply(lambda x: x if str(x).isdigit() else 0) # enleve les '.'
     db["annee_enfant"] = db["annee_enfant"].apply(lambda x: int(x)) # met tout en int
-    db["annee_enfant"] = db["annee_enfant"].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
+    db["annee_enfant"] = db["annee_enfant"].apply(lambda x: 0 if x < 1730 or x > 1832 else x) #sélectionne les bonnes dates
     db = db[db["annee_enfant"] != 0]
     return db
 
@@ -72,7 +72,7 @@ def create_child_list(db):
     annee = db["enfants_annee_naissance"].str.split("|")
     annee2 = annee.explode().reset_index()[["enfants_annee_naissance"]]
     chef_enfant["annee_enfant"]=annee2
-    return chef_enfant
+    return chef_enfant.sort_values(by=["annee_enfant"])
 
 #get_relevant_columns() #doing this once is enough
 db = pd.read_csv(os.path.dirname(__file__) + "/../data/1832_pc_relevant_columns.csv")
