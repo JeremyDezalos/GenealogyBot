@@ -45,6 +45,7 @@ def transform_field_to_int(db, field):
     db[field] = db[field].apply(lambda x: x if x.isdigit() else 0) # enleve les '.'
     db[field] = db[field].apply(lambda x: int(x)) # met tout en int
     db[field] = db[field].apply(lambda x: 0 if x < 1730 or x > 1833 else x) #sélectionne les bonnes dates
+    db[field] = db[field].apply(lambda x: "-" if x == 0 else x) #sélectionne les bonnes dates
     return db
 
 
@@ -66,9 +67,9 @@ def filter_children(db):
     return db
 
 def create_child_list(db):
-    chef = db[["chef_prenom","chef_nom", "epouse_nom"]]
+    chef = db[["chef_prenom","chef_nom", "epouse_nom", "chef_annee_naissance"]]
     enfant = db["enfants_dans_la_commune_prenom"].str.split("|")
-    chef_enfant = chef.join(enfant).explode("enfants_dans_la_commune_prenom").reset_index()[["chef_prenom","chef_nom", "epouse_nom", "enfants_dans_la_commune_prenom"]]
+    chef_enfant = chef.join(enfant).explode("enfants_dans_la_commune_prenom").reset_index()[["chef_prenom","chef_nom", "epouse_nom", "enfants_dans_la_commune_prenom" , "chef_annee_naissance"]]
     annee = db["enfants_annee_naissance"].str.split("|")
     annee2 = annee.explode().reset_index()[["enfants_annee_naissance"]]
     chef_enfant["annee_enfant"]=annee2
