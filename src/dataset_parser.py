@@ -38,6 +38,7 @@ def throw_away_bad_names(db, names, prenoms):
 
     del db['name_is_correct']
     del db['prenom_is_correct']
+    db = db.dropna(subset=['epouse_nom'])
     return db
 
 def transform_field_to_int(db, field):
@@ -80,5 +81,7 @@ names = pd.read_csv(os.path.dirname(__file__) + "/../data/all_names_only.csv")
 prenoms = pd.read_csv(os.path.dirname(__file__) + "/../data/all_prenoms_only.csv")
 filtered_db = throw_away_bad_names(db, names, prenoms)
 filtered_db = transform_dates_to_int(filtered_db)
+filtered_db.to_csv(os.path.dirname(__file__) + r'/../data/filtered.csv')
 child_db = create_child_list(filtered_db)
+print(child_db)
 filter_children(child_db).to_csv(os.path.dirname(__file__) + r'/../data/chef_enfant.csv')
